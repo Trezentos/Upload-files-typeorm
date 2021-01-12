@@ -2,8 +2,8 @@ import csvParse from 'csv-parse';
 import fs from 'fs';
 import { getCustomRepository, getRepository, In } from 'typeorm';
 import Transaction from '../models/Transaction';
-import TransactionsRepository from '../repositories/TransactionsRepository';
 import Category from '../models/Category';
+import TransactionsRepository from '../repositories/TransactionsRepository';
 
 interface CSVTransaction {
   title: string;
@@ -32,7 +32,6 @@ class ImportTransactionsService {
       const [title, type, value, category] = line.map((cell: string) =>
         cell.trim(),
       );
-
       if (!title || !type || !value) return;
 
       categories.push(category);
@@ -65,15 +64,22 @@ class ImportTransactionsService {
 
     await categoriesRepository.save(newCategories);
 
-    const finalCategories = [...newCategories, ...existentsCategoriesTitle];
+    const finalCategories = [...newCategories, ...existentsCategories];
+    console.table(finalCategories);
 
     const createdTransactions = transactionRepository.create(
       transactions.map(transaction => ({
         title: transaction.title,
         type: transaction.type,
         value: transaction.value,
+        category: finalCategories.find(
+          category => category.title === transaction.category,
+        ),
       })),
     );
+
+    transactionRepository.save(createdTransactions);
+
     return createdTransactions;
   }
 }
